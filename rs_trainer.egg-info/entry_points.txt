@@ -1,0 +1,2 @@
+[console_scripts]
+rstrainer = main:main

@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+rs_trainer.egg-info/PKG-INFO
+rs_trainer.egg-info/SOURCES.txt
+rs_trainer.egg-info/dependency_links.txt
+rs_trainer.egg-info/entry_points.txt
+rs_trainer.egg-info/requires.txt
+rs_trainer.egg-info/top_level.txt

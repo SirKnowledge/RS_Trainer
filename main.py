@@ -5,11 +5,12 @@ from tkinter import ttk
 import subprocess
 import threading
 import os
-import sys
 import requests
 import webbrowser
+import json
 
-from config.config import *
+from pathlib import Path
+from config.config import keybind_config, USER_KEYBINDS
 from order_key_binds import reorder_keybinds_json
 
 # ----------------- Config -----------------
@@ -26,9 +27,11 @@ KEYBINDS_FILE = os.path.join(APPDATA_DIR, "keybinds.json")
 CONFIG_FILE = os.path.join(APPDATA_DIR, "config.json")
 BUILD_ROTATION_FILE = os.path.join(APPDATA_DIR, "build_rotation.txt")
 DEFAULT_BUILD_ROTATION_FILE = os.path.join("config", "build_rotation.txt")
-from pathlib import Path
 
-APPDATA_BOSS_DIR = Path(os.getenv("APPDATA") or Path.home() / ".config") / "Azulyn" / "boss_rotations"
+
+APPDATA_BOSS_DIR = (
+    Path(os.getenv("APPDATA") or Path.home() / ".config") / "Azulyn" / "boss_rotations"
+)
 SOURCE_BOSS_DIR = Path("boss_rotations")
 APPDATA_BOSS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -42,7 +45,11 @@ with open("config/keybinds.json", "r", encoding="utf-8") as f:
     default_keybinds = json.load(f)
 
 # Check for missing keys under "ABILITY_KEYBINDS"
-missing_keybinds = {key: value for key, value in default_keybinds["ABILITY_KEYBINDS"].items() if key not in keybind_config["ABILITY_KEYBINDS"]}
+missing_keybinds = {
+    key: value
+    for key, value in default_keybinds["ABILITY_KEYBINDS"].items()
+    if key not in keybind_config["ABILITY_KEYBINDS"]
+}
 
 if missing_keybinds:
     # Add missing keys to "ABILITY_KEYBINDS"
@@ -50,7 +57,7 @@ if missing_keybinds:
 
     # Save the updated user keybinds without reformatting other entries
     with open(USER_KEYBINDS, "w", encoding="utf-8") as f:
-        json.dump(keybind_config, f, indent=4, separators=(',', ': '))
+        json.dump(keybind_config, f, indent=4, separators=(",", ": "))
     print(f"Added missing keybinds under 'ABILITY_KEYBINDS': {missing_keybinds}")
 else:
     print("All keybinds under 'ABILITY_KEYBINDS' are already present.")
@@ -64,6 +71,7 @@ for file in SOURCE_BOSS_DIR.glob("*.json"):
     if not target.exists():
         shutil.copy(file, target)
 
+
 def check_for_update():
     try:
         response = requests.get(VERSION_URL, timeout=5)
@@ -72,40 +80,50 @@ def check_for_update():
         download_url = data["download_url"]
         notes = data.get("notes", "")
         if latest_version != CURRENT_VERSION:
-            if messagebox.askyesno("Update Available", f"New version {latest_version} available:\n\n{notes}\n\nDownload now?"):
+            if messagebox.askyesno(
+                "Update Available",
+                f"New version {latest_version} available:\n\n{notes}\n\nDownload now?",
+            ):
                 webbrowser.open(download_url)
         else:
-            messagebox.showinfo("No Update", f"You're running the latest version ({CURRENT_VERSION})")
+            messagebox.showinfo(
+                "No Update", f"You're running the latest version ({CURRENT_VERSION})"
+            )
     except Exception as e:
         messagebox.showerror("Update Check Failed", str(e))
 
+
 def load_last_used_boss():
     if os.path.exists(last_boss_selected_save):
-        with open(last_boss_selected_save, 'r') as f:
+        with open(last_boss_selected_save, "r") as f:
             return f.read().strip()
     return BOSS_FILE
 
+
 def load_last_pvm_rot():
     if os.path.exists(last_rotation_selected_save):
-        with open(last_rotation_selected_save, 'r') as f:
+        with open(last_rotation_selected_save, "r") as f:
             return f.read().strip()
     return BUILD_ROTATION_FILE
 
+
 def save_current_config():
-    with open(last_boss_selected_save, 'w') as f:
+    with open(last_boss_selected_save, "w") as f:
         f.write(last_used_boss.get())
+
 
 def start_script(exe_path, log_output=False, args=None):
     full_path = os.path.abspath(exe_path)
     args = args or []
+
     def run():
         try:
-            process = subprocess.Popen(
+            subprocess.Popen(
                 [full_path] + args,
                 cwd=os.path.dirname(full_path),
                 stdout=subprocess.PIPE if log_output else None,
                 stderr=subprocess.STDOUT if log_output else None,
-                text=True
+                text=True,
             )
             # if log_output:
             #     log_text.delete("1.0", tk.END)
@@ -115,7 +133,9 @@ def start_script(exe_path, log_output=False, args=None):
             #     process.wait()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to launch {exe_path}:\n{e}")
+
     threading.Thread(target=run).start()
+
 
 def open_file_editor(filepath):
     if not os.path.isfile(filepath):
@@ -127,30 +147,40 @@ def open_file_editor(filepath):
 def get_default_editor():
     return os.environ.get("EDITOR", "notepad")
 
+
 def browse_rotation_file():
     file_path = filedialog.askopenfilename(
         initialdir=str(APPDATA_BOSS_DIR),
         title="Select Rotation File",
-        filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
+        filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
     )
     if file_path:
         last_used_boss.set(file_path)
-        last_used_boss_trimmed_string = last_used_boss.get().split("/")[-1].split("\\")[-1]
-        last_used_boss_trimmed_string = last_used_boss_trimmed_string.replace(".json", "")
+        last_used_boss_trimmed_string = (
+            last_used_boss.get().split("/")[-1].split("\\")[-1]
+        )
+        last_used_boss_trimmed_string = last_used_boss_trimmed_string.replace(
+            ".json", ""
+        )
         last_used_boss_trimmed.set(last_used_boss_trimmed_string)
         save_current_config()
+
 
 def open_donation():
     webbrowser.open("https://buymeacoffee.com/azulyn")
 
+
 def open_discord():
     webbrowser.open("https://discord.gg/Sp7Sh52B")
+
 
 def open_rotation():
     webbrowser.open("https://blueboy4g.github.io/RS_Rotation_Creator/")
 
+
 def open_youtube():
     webbrowser.open("https://www.youtube.com/@Azulyn1")
+
 
 # --------------- UI Setup ----------------
 reorder_keybinds_json()
@@ -205,10 +235,18 @@ bottom_frame.pack(pady=(5, 0))
 footer = tk.Frame(root)
 footer.pack(side="right", pady=(10, 0))
 
-ttk.Button(left, text="Start RS Overlay", style="Gray.TButton",
-           command=lambda: start_script("scripts/RS_Overlay.exe", args=[last_used_boss.get()])).pack(pady=2, fill="x")
-ttk.Button(left, text="Edit Keybinds", style="Gray.TButton",
-           command=lambda: start_script("key_binds.exe")).pack(pady=2, fill="x")
+ttk.Button(
+    left,
+    text="Start RS Overlay",
+    style="Gray.TButton",
+    command=lambda: start_script("scripts/RS_Overlay.exe", args=[last_used_boss.get()]),
+).pack(pady=2, fill="x")
+ttk.Button(
+    left,
+    text="Edit Keybinds",
+    style="Gray.TButton",
+    command=lambda: start_script("key_binds.exe"),
+).pack(pady=2, fill="x")
 # ttk.Button(left, text="Build Rotation", style="Gray.TButton",
 #            command=lambda: start_script("scripts/rotation_creation.exe", log_output=True)).pack(pady=2, fill="x")
 
@@ -217,20 +255,33 @@ tk.Label(log_frame, text="Current Boss:").pack(pady=(0, 2))
 last_used_boss_trimmed = last_used_boss.get().split("/")[-1].split("\\")[-1]
 last_used_boss_trimmed = last_used_boss_trimmed.replace(".json", "")
 last_used_boss_trimmed = tk.StringVar(value=last_used_boss_trimmed)
-tk.Entry(log_frame, textvariable=last_used_boss_trimmed, width=40).pack()
-ttk.Button(log_frame, text="Select Boss Script", style="Gray.TButton",
-           command=browse_rotation_file).pack(pady=10, padx=30, fill="x")
 
-ttk.Button(right, text="Start RS Trainer", style="Gray.TButton",
-           command=lambda: start_script("scripts/RS_Trainer.exe", args=[last_used_boss.get()])).pack(pady=2, fill="x")
-ttk.Button(right, text="Edit Config", style="Gray.TButton",
-           command=lambda: open_file_editor(config_file.get())).pack(pady=2, fill="x")
+tk.Entry(log_frame, textvariable=last_used_boss_trimmed, width=40).pack()
+ttk.Button(
+    log_frame,
+    text="Select Boss Script",
+    style="Gray.TButton",
+    command=browse_rotation_file,
+).pack(pady=10, padx=30, fill="x")
+
+ttk.Button(
+    right,
+    text="Start RS Trainer",
+    style="Gray.TButton",
+    command=lambda: start_script("scripts/RS_Trainer.exe", args=[last_used_boss.get()]),
+).pack(pady=2, fill="x")
+ttk.Button(
+    right,
+    text="Edit Config",
+    style="Gray.TButton",
+    command=lambda: open_file_editor(config_file.get()),
+).pack(pady=2, fill="x")
 # ttk.Button(right, text="Build Rotation File", style="Gray.TButton",
 #            command=lambda: open_file_editor(last_used_pvm_rot.get())).pack(pady=2, fill="x")
 
-#trim everything but the .json name at the end
+# trim everything but the .json name at the end
 last_used_pvm_rot_trimmed = last_used_pvm_rot.get().split("/")[-1].split("\\")[-1]
-#trim everything the .json name at the end
+# trim everything the .json name at the end
 last_used_pvm_rot_trimmed = last_used_pvm_rot_trimmed.replace(".txt", "")
 last_used_pvm_rot_trimmed = tk.StringVar(value=last_used_pvm_rot_trimmed)
 
@@ -244,16 +295,24 @@ last_used_pvm_rot_trimmed = tk.StringVar(value=last_used_pvm_rot_trimmed)
 
 # ttk.Button(bottom_frame, text="Clear Log", style="Gray.TButton",
 #            command=lambda: log_text.delete("1.0", tk.END)).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Check for Updates", style="Gray.TButton",
-           command=check_for_update).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Youtube", style="Gray.TButton",
-           command=open_youtube).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Discord", style="Gray.TButton",
-           command=open_discord).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Build a Rotation", style="Gray.TButton",
-           command=open_rotation).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Donate", style="Gray.TButton",
-           command=open_donation).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame,
+    text="Check for Updates",
+    style="Gray.TButton",
+    command=check_for_update,
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Youtube", style="Gray.TButton", command=open_youtube
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Discord", style="Gray.TButton", command=open_discord
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Build a Rotation", style="Gray.TButton", command=open_rotation
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Donate", style="Gray.TButton", command=open_donation
+).pack(side="left", padx=5, pady=1)
 
 # tk.Label(
 #     footer,
@@ -264,7 +323,9 @@ ttk.Button(bottom_frame, text="Donate", style="Gray.TButton",
 #     foreground="blue",
 # ).pack(side="left", padx=5, pady=0)
 
-tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}").pack(side="right", padx=5, pady=0)
+tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}").pack(
+    side="right", padx=5, pady=0
+)
 
 
 root.mainloop()
