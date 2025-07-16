@@ -1,1 +1,5 @@
 /dist_final/
+__pycache__
+.venv
+rs_trainer.egg-info
+/resources/ability_icons
