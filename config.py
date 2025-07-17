@@ -10,6 +10,9 @@ USER_KEYBINDS = os.path.join(APPDATA_DIR, "user_config", "keybinds.json")
 USER_CONFIG = os.path.join(APPDATA_DIR, "user_config", "config.json")
 DEFAULT_KEYBINDS = os.path.join(APPDATA_DIR, "keybinds.json")
 DEFAULT_CONFIG = os.path.join(APPDATA_DIR, "config.json")
+APPDATA_BOSS_DIR = os.path.join(APPDATA_DIR, "boss_rotations")
+BOSS_FILE = os.path.join(APPDATA_BOSS_DIR, "azulyn_telos_2499_necro.json")
+
 
 if not os.path.exists(USER_KEYBINDS):
     if os.path.exists(DEFAULT_KEYBINDS):

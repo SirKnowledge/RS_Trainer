@@ -2,16 +2,12 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import os
-from config import APPDATA_DIR, USER_KEYBINDS, DEFAULT_KEYBINDS
-
-
-# CONFIG_PATH = os.path.join(APPDATA_DIR, "keybinds.json")
-
+from config import USER_KEYBINDS, DEFAULT_KEYBINDS
 
 ICON_PATH = "Resources/azulyn_icon.ico"
 
 MODIFIER_ALIASES = {
-    "CTRL": "LCTRL",
+    "CTRL": "CTRL",
     "LCTRL": "LCTRL",
     "SHIFT": "LSHIFT",
     "LSHIFT": "LSHIFT",
@@ -21,8 +17,8 @@ MODIFIER_ALIASES = {
 
 
 class AbilityKeybindEditor:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, toplevel: tk.Toplevel):
+        self.root = toplevel
         self.root.title("Keybind Editor")
         self.abilities = {}
 
@@ -34,7 +30,7 @@ class AbilityKeybindEditor:
         container = tk.Frame(self.root)
         container.pack(fill=tk.BOTH, expand=True)
 
-        canvas = tk.Canvas(container, height=500)
+        canvas = tk.Canvas(container, height=500, borderwidth=0)
         scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
         self.scrollable_frame = tk.Frame(canvas)
 
@@ -48,12 +44,10 @@ class AbilityKeybindEditor:
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Header
-        # tk.Label(self.scrollable_frame, text="Ability", width=18, anchor="w").grid(row=0, column=0, padx=5, sticky="w")
-        # tk.Label(self.scrollable_frame, text="Key", width=12, anchor="w").grid(row=0, column=1, padx=5, sticky="w")
-        # tk.Label(self.scrollable_frame, text="Ctrl", width=8, anchor="w").grid(row=0, column=2, padx=5)
-        # tk.Label(self.scrollable_frame, text="Shift", width=8, anchor="w").grid(row=0, column=3, padx=5)
-        # tk.Label(self.scrollable_frame, text="Alt", width=8, anchor="w").grid(row=0, column=4, padx=5)
+        def on_mousewheelattribute(event):
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        self.root.bind_all("<MouseWheel>", on_mousewheelattribute)
 
         self.rows_container = self.scrollable_frame  # use same frame for alignment
 
@@ -179,7 +173,7 @@ class AbilityKeybindEditor:
             key = key_entry.get().strip()
             mods = []
             if modifiers["ctrl"].get():
-                mods.append("LCTRL")
+                mods.append("CTRL")
             if modifiers["shift"].get():
                 mods.append("SHIFT")
             if modifiers["alt"].get():
@@ -191,7 +185,8 @@ class AbilityKeybindEditor:
         with open(USER_KEYBINDS, "w") as f:
             json.dump(data, f, indent=2)
 
-        messagebox.showinfo("Saved", f"Saved to:\n{USER_KEYBINDS}")
+        # messagebox.showinfo("Saved", f"Saved to:\n{USER_KEYBINDS}")
+
         self.root.destroy()
 
     def add_ability_row(self, parent_frame, row_num, ability_name, keys):
@@ -233,13 +228,17 @@ class AbilityKeybindEditor:
         )
 
 
-def triggerkeybinds():
-    root = tk.Tk()
-    root.iconbitmap(ICON_PATH)
-    root.geometry("550x650")
-    AbilityKeybindEditor(root)
-    root.mainloop()
+def triggerkeybinds(root: tk.Tk):
+    toplevel = tk.Toplevel(root)
+    toplevel.iconbitmap(ICON_PATH)
+    toplevel.geometry("550x650")
+    AbilityKeybindEditor(toplevel)
+    root.wait_window(toplevel)
+    root.deiconify()
+    # root.mainloop()
 
 
 if __name__ == "__main__":
-    triggerkeybinds()
+    root = tk.Tk()
+    root.withdraw()
+    triggerkeybinds(root)

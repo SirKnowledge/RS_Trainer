@@ -9,6 +9,7 @@ from config import (
     SCREEN_WIDTH,
     EXCLUDED_DIAL_ANIMATIONS,
     USER_KEYBINDS,
+    BOSS_FILE,
 )
 from dial_animation import DialAnimation
 from ability import Ability, TickBar
@@ -22,10 +23,25 @@ import json
 import os
 import threading
 import keyboard
+import win32con
+import win32gui
+
+
+def make_window_always_on_top():
+    hwnd = win32gui.GetForegroundWindow()  # Get current foreground window
+    win32gui.SetWindowPos(
+        hwnd,
+        win32con.HWND_TOPMOST,
+        0,
+        0,
+        0,
+        0,
+        win32con.SWP_NOMOVE | win32con.SWP_NOSIZE,
+    )
 
 
 # Initialize Pygame
-def triggerrstrainer():
+def triggerrstrainer(rotation_file: str):
     try:
         with open(USER_KEYBINDS, "r", encoding="utf-8") as f:
             keybinds = json.load(f)
@@ -44,9 +60,6 @@ def triggerrstrainer():
         sys.exit()
 
     ABILITY_KEYBINDS = keybinds["ABILITY_KEYBINDS"]
-
-    # TODO: pass in as function parameter
-    rotation_file = "boss_rotations/azulyn_raksha_necro.json"
 
     try:
         with open(rotation_file, "r", encoding="utf-8") as f:
@@ -91,6 +104,7 @@ def triggerrstrainer():
 
     # Create Pygame screen and set window position
     screen = pygame.display.set_mode((win_w, win_h))
+    make_window_always_on_top()
 
     # Game Variables
     press_zone_rect = pygame.Rect(
@@ -99,6 +113,7 @@ def triggerrstrainer():
     tick_bars: list[TickBar] = []  # Store tick bars
 
     # Game variables
+    global running
     running = True
     clock = pygame.time.Clock()
     spawned_abilities: list[Ability] = []
@@ -122,6 +137,7 @@ def triggerrstrainer():
 
     # Main Game Loop
     def global_key_listener():
+        global running
         global held_keys
         global testvariablehook
 
@@ -152,8 +168,14 @@ def triggerrstrainer():
                     if key in held_keys:
                         print(f"[GLOBAL] Key released: {key}")
                         held_keys.discard(key)
+                    if key in new_keys:
+                        new_keys.discard(key)
 
         testvariablehook = keyboard.hook(on_key_event)
+        keyboard.wait("esc")
+        keyboard.unhook_all()
+        print("Hook unset")
+        # sys.exit()
         # print(testvariablehook)
 
     # Start the global key listener
@@ -251,55 +273,54 @@ def triggerrstrainer():
         # Draw pressing zone
         pygame.draw.rect(screen, (255, 0, 0), press_zone_rect)
 
-        keys = pygame.key.get_pressed()
+        # keys = pygame.key.get_pressed()
 
         # Check for hits
         for ability in spawned_abilities[:]:
             try:
-                required_keys_pressed = (
-                    False  # Start with False (assume key is NOT pressed)
-                )
+                required_keys_pressed: bool = False  # Assume key is NOT pressed
 
-                for k in ability.key:
-                    k = k.strip().upper()  # Normalize key formatting
+                # for k in ability.key:
+                #     k = k.strip().upper()  # Normalize key formatting
 
-                    required_keys_pressed = all(
-                        (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT])
-                        if k == "SHIFT"
-                        else (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL])
-                        if k in ["CTRL", "LCTRL"]
-                        else (keys[pygame.K_LALT] or keys[pygame.K_RALT])
-                        if k == "ALT"
-                        else (
-                            keys[pygame.K_LEFTBRACKET]
-                            if k == "["
-                            else keys[pygame.K_RIGHTBRACKET]
-                            if k == "]"
-                            else keys[pygame.K_BACKSLASH]
-                            if k == "\\"
-                            else keys[pygame.K_MINUS]
-                            if k == "-"
-                            else keys[pygame.K_COMMA]
-                            if k == ","
-                            else keys[pygame.K_BACKQUOTE]
-                            if k == "`"
-                            else pygame.mouse.get_pressed()[0]
-                            if k == "MOUSE"
-                            else keys[getattr(pygame, f"K_F{k[1:]}")]
-                            if k.startswith("F") and k[1:].isdigit()
-                            else keys[getattr(pygame, f"K_{k.lower()}")]
-                            if getattr(pygame, f"K_{k.lower()}", None)
-                            else False
-                        )
-                        for k in ability.key
-                    )
-                    if not required_keys_pressed:
-                        if any(k.lower() in new_keys for k in ability.key) and all(
-                            (k.lower() in new_keys or k.lower() in held_keys)
-                            for k in ability.key
-                        ):
-                            required_keys_pressed = True
-                            new_keys = set()
+                #     required_keys_pressed = all(
+                #         (keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT])
+                #         if k == "SHIFT"
+                #         else (keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL])
+                #         if k in ["CTRL", "LCTRL"]
+                #         else (keys[pygame.K_LALT] or keys[pygame.K_RALT])
+                #         if k == "ALT"
+                #         else (
+                #             keys[pygame.K_LEFTBRACKET]
+                #             if k == "["
+                #             else keys[pygame.K_RIGHTBRACKET]
+                #             if k == "]"
+                #             else keys[pygame.K_BACKSLASH]
+                #             if k == "\\"
+                #             else keys[pygame.K_MINUS]
+                #             if k == "-"
+                #             else keys[pygame.K_COMMA]
+                #             if k == ","
+                #             else keys[pygame.K_BACKQUOTE]
+                #             if k == "`"
+                #             else pygame.mouse.get_pressed()[0]
+                #             if k == "MOUSE"
+                #             else keys[getattr(pygame, f"K_F{k[1:]}")]
+                #             if k.startswith("F") and k[1:].isdigit()
+                #             else keys[getattr(pygame, f"K_{k.lower()}")]
+                #             if getattr(pygame, f"K_{k.lower()}", None)
+                #             else False
+                #         )
+                #         for k in ability.key
+                #     )
+                # if not required_keys_pressed:
+
+                if any(k.lower() in new_keys for k in ability.key) and all(
+                    (k.lower() in new_keys or k.lower() in held_keys)
+                    for k in ability.key
+                ):
+                    required_keys_pressed = True
+                    new_keys = set()
 
                 # ✅ **Check if the ability should trigger the dial animation**
                 if required_keys_pressed and press_zone_rect.colliderect(ability.rect):
@@ -383,9 +404,9 @@ def triggerrstrainer():
                 event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
             ):
                 waiting = False
-
+    keyboard.unhook_all()
     pygame.quit()
 
 
 if __name__ == "__main__":
-    triggerrstrainer()
+    triggerrstrainer(BOSS_FILE)

@@ -18,22 +18,16 @@ VERSION_URL = "https://raw.githubusercontent.com/blueboy4g/RS_Trainer/main/versi
 
 os.makedirs(config.APPDATA_DIR, exist_ok=True)
 
-last_boss_selected_save = os.path.join(config.APPDATA_DIR, "last_boss_selected.txt")
+last_boss_selected_save = os.path.join(
+    config.APPDATA_DIR, "user_config", "last_boss_selected.txt"
+)
 last_rotation_selected_save = os.path.join(
     config.APPDATA_DIR, "last_rotation_selected.txt"
 )
 KEYBINDS_FILE = os.path.join(config.APPDATA_DIR, "keybinds.json")
 CONFIG_FILE = os.path.join(config.APPDATA_DIR, "config.json")
 BUILD_ROTATION_FILE = os.path.join(config.APPDATA_DIR, "build_rotation.txt")
-# DEFAULT_BUILD_ROTATION_FILE = os.path.join("conf"build_rotation.txt")
 
-
-APPDATA_BOSS_DIR = os.path.join(config.APPDATA_DIR, "boss_rotations")
-# SOURCE_BOSS_DIR = Path("boss_rotations")
-# APPDATA_BOSS_DIR.mkdir(parents=True, exist_ok=True)
-
-BOSS_FILE = os.path.join(APPDATA_BOSS_DIR, "azulyn_telos_2499_necro.json")
-# TODO: This should pick up last saved boss file
 
 ICON_PATH = "Resources/azulyn_icon.ico"
 # ------------------------------------------
@@ -59,15 +53,6 @@ if missing_keybinds:
     print(f"Added missing keybinds under 'ABILITY_KEYBINDS': {missing_keybinds}")
 else:
     print("All keybinds under 'ABILITY_KEYBINDS' are already present.")
-
-# if not os.path.exists(BUILD_ROTATION_FILE):
-#     if os.path.exists(DEFAULT_BUILD_ROTATION_FILE):
-#         shutil.copy(DEFAULT_BUILD_ROTATION_FILE, BUILD_ROTATION_FILE)
-
-# for file in SOURCE_BOSS_DIR.glob("*.json"):
-#     target = APPDATA_BOSS_DIR / file.name
-#     if not target.exists():
-#         shutil.copy(file, target)
 
 
 def check_for_update():
@@ -96,7 +81,7 @@ def load_last_used_boss():
         with open(last_boss_selected_save, "r") as f:
             return f.read().strip()
     else:
-        return BOSS_FILE
+        return config.BOSS_FILE
 
 
 def load_last_pvm_rot():
@@ -125,7 +110,7 @@ def get_default_editor():
 
 def browse_rotation_file():
     file_path = filedialog.askopenfilename(
-        initialdir=str(APPDATA_BOSS_DIR),
+        initialdir=str(config.APPDATA_BOSS_DIR),
         title="Select Rotation File",
         filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
     )
@@ -155,8 +140,13 @@ def open_youtube():
 
 def start_overlay():
     root.withdraw()
-    rs_trainer.triggerrstrainer()
+    rs_trainer.triggerrstrainer(last_used_boss.get())
     root.deiconify()
+
+
+def openkeybinds():
+    root.withdraw()
+    triggerkeybinds(root)
 
 
 # --------------- UI Setup ----------------
@@ -174,7 +164,6 @@ style.map("Dark.TButton", background=[("active", "#555")])
 
 last_used_boss = tk.StringVar(value=load_last_used_boss())
 last_used_pvm_rot = tk.StringVar(value=load_last_pvm_rot())
-
 
 ascii_title = r"""
    _____               .__                
@@ -213,7 +202,7 @@ ttk.Button(
     left,
     text="Edit Keybinds",
     style="Gray.TButton",
-    command=lambda: triggerkeybinds(),
+    command=lambda: openkeybinds(),
 ).pack(pady=2, fill="x")
 
 tk.Label(log_frame, text="Current Boss:").pack(pady=(0, 2))
@@ -263,14 +252,6 @@ ttk.Button(
     bottom_frame, text="Donate", style="Gray.TButton", command=open_donation
 ).pack(side="left", padx=5, pady=1)
 
-# tk.Label(q
-#     footer,
-#     text=ascii_title,
-#     font=("Courier", 3),
-#     justify="right",
-#     anchor="w",
-#     foreground="blue",
-# ).pack(side="left", padx=5, pady=0)
 
 tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}").pack(
     side="right", padx=5, pady=0
