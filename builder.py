@@ -9,7 +9,7 @@ import sys
 import requests
 import webbrowser
 
-from config.config import *
+from config import *
 
 # ----------------- Config -----------------
 CURRENT_VERSION = "1.1.1"
@@ -26,7 +26,9 @@ BUILD_ROTATION_FILE = os.path.join(APPDATA_DIR, "build_rotation.txt")
 DEFAULT_BUILD_ROTATION_FILE = os.path.join("config", "build_rotation.txt")
 from pathlib import Path
 
-APPDATA_BOSS_DIR = Path(os.getenv("APPDATA") or Path.home() / ".config") / "Azulyn" / "boss_rotations"
+APPDATA_BOSS_DIR = (
+    Path(os.getenv("APPDATA") or Path.home() / ".config") / "Azulyn" / "boss_rotations"
+)
 SOURCE_BOSS_DIR = Path("boss_rotations")
 APPDATA_BOSS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -44,6 +46,7 @@ for file in SOURCE_BOSS_DIR.glob("*.json"):
     if not target.exists():
         shutil.copy(file, target)
 
+
 def check_for_update():
     try:
         response = requests.get(VERSION_URL, timeout=5)
@@ -52,32 +55,42 @@ def check_for_update():
         download_url = data["download_url"]
         notes = data.get("notes", "")
         if latest_version != CURRENT_VERSION:
-            if messagebox.askyesno("Update Available", f"New version {latest_version} available:\n\n{notes}\n\nDownload now?"):
+            if messagebox.askyesno(
+                "Update Available",
+                f"New version {latest_version} available:\n\n{notes}\n\nDownload now?",
+            ):
                 webbrowser.open(download_url)
         else:
-            messagebox.showinfo("No Update", f"You're running the latest version ({CURRENT_VERSION})")
+            messagebox.showinfo(
+                "No Update", f"You're running the latest version ({CURRENT_VERSION})"
+            )
     except Exception as e:
         messagebox.showerror("Update Check Failed", str(e))
 
+
 def load_last_used_boss():
     if os.path.exists(last_boss_selected_save):
-        with open(last_boss_selected_save, 'r') as f:
+        with open(last_boss_selected_save, "r") as f:
             return f.read().strip()
     return BOSS_FILE
 
+
 def load_last_pvm_rot():
     if os.path.exists(last_rotation_selected_save):
-        with open(last_rotation_selected_save, 'r') as f:
+        with open(last_rotation_selected_save, "r") as f:
             return f.read().strip()
     return BUILD_ROTATION_FILE
 
+
 def save_current_config():
-    with open(last_boss_selected_save, 'w') as f:
+    with open(last_boss_selected_save, "w") as f:
         f.write(last_used_boss.get())
+
 
 def start_script(exe_path, log_output=False, args=None):
     full_path = os.path.abspath(exe_path)
     args = args or []
+
     def run():
         try:
             process = subprocess.Popen(
@@ -85,7 +98,7 @@ def start_script(exe_path, log_output=False, args=None):
                 cwd=os.path.dirname(full_path),
                 stdout=subprocess.PIPE if log_output else None,
                 stderr=subprocess.STDOUT if log_output else None,
-                text=True
+                text=True,
             )
             if log_output:
                 log_text.delete("1.0", tk.END)
@@ -95,7 +108,9 @@ def start_script(exe_path, log_output=False, args=None):
                 process.wait()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to launch {exe_path}:\n{e}")
+
     threading.Thread(target=run).start()
+
 
 def open_file_editor(filepath):
     if not os.path.isfile(filepath):
@@ -103,8 +118,10 @@ def open_file_editor(filepath):
         return
     subprocess.Popen([get_default_editor(), filepath])
 
+
 def get_default_editor():
     return os.environ.get("EDITOR", "notepad")
+
 
 # def browse_rotation_file():
 #     file_path = filedialog.askopenfilename(
@@ -119,14 +136,18 @@ def get_default_editor():
 #         last_used_boss_trimmed.set(last_used_boss_trimmed_string)
 #         save_current_config()
 
+
 def open_donation():
     webbrowser.open("https://buymeacoffee.com/azulyn")
+
 
 def open_discord():
     webbrowser.open("https://discord.gg/Sp7Sh52B")
 
+
 def open_youtube():
     webbrowser.open("https://www.youtube.com/@Azulyn1")
+
 
 # --------------- UI Setup ----------------
 root = tk.Tk()
@@ -196,9 +217,9 @@ footer.pack(side="right", pady=(20, 0))
 # ttk.Button(right, text="Select Boss Script", style="Gray.TButton",
 #            command=browse_rotation_file).pack(pady=2, fill="x")
 
-#trim everything but the .json name at the end
+# trim everything but the .json name at the end
 last_used_pvm_rot_trimmed = last_used_pvm_rot.get().split("/")[-1].split("\\")[-1]
-#trim everything the .json name at the end
+# trim everything the .json name at the end
 last_used_pvm_rot_trimmed = last_used_pvm_rot_trimmed.replace(".txt", "")
 last_used_pvm_rot_trimmed = tk.StringVar(value=last_used_pvm_rot_trimmed)
 
@@ -210,22 +231,41 @@ tk.Label(log_frame, text="Build Rotation Log:").pack()
 log_text = tk.Text(log_frame, height=10, width=70, wrap=tk.WORD)
 log_text.pack(padx=5, pady=(0, 2))
 
-ttk.Button(log_frame, text="Build Rotation", style="Gray.TButton",
-           command=lambda: start_script("scripts/rotation_creation.exe", log_output=True)).pack(pady=2, fill="x")
+ttk.Button(
+    log_frame,
+    text="Build Rotation",
+    style="Gray.TButton",
+    command=lambda: start_script("scripts/rotation_creation.exe", log_output=True),
+).pack(pady=2, fill="x")
 
-ttk.Button(log_frame, text="Edit Build Rotation File", style="Gray.TButton",
-           command=lambda: open_file_editor(last_used_pvm_rot.get())).pack(pady=2, fill="x")
+ttk.Button(
+    log_frame,
+    text="Edit Build Rotation File",
+    style="Gray.TButton",
+    command=lambda: open_file_editor(last_used_pvm_rot.get()),
+).pack(pady=2, fill="x")
 
-ttk.Button(bottom_frame, text="Clear Log", style="Gray.TButton",
-           command=lambda: log_text.delete("1.0", tk.END)).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Check for Updates", style="Gray.TButton",
-           command=check_for_update).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Azulyn Youtube", style="Gray.TButton",
-           command=open_youtube).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Azulyn Discord", style="Gray.TButton",
-           command=open_discord).pack(side="left", padx=5, pady=1)
-ttk.Button(bottom_frame, text="Donate", style="Gray.TButton",
-           command=open_donation).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame,
+    text="Clear Log",
+    style="Gray.TButton",
+    command=lambda: log_text.delete("1.0", tk.END),
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame,
+    text="Check for Updates",
+    style="Gray.TButton",
+    command=check_for_update,
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Azulyn Youtube", style="Gray.TButton", command=open_youtube
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Azulyn Discord", style="Gray.TButton", command=open_discord
+).pack(side="left", padx=5, pady=1)
+ttk.Button(
+    bottom_frame, text="Donate", style="Gray.TButton", command=open_donation
+).pack(side="left", padx=5, pady=1)
 
 # tk.Label(
 #     footer,
@@ -236,7 +276,9 @@ ttk.Button(bottom_frame, text="Donate", style="Gray.TButton",
 #     foreground="blue",
 # ).pack(side="left", padx=5, pady=0)
 
-tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}").pack(side="right", padx=5, pady=0)
+tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}").pack(
+    side="right", padx=5, pady=0
+)
 
 
 root.mainloop()

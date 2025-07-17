@@ -4,7 +4,7 @@ import difflib
 import json
 import shutil
 
-from config.config import USER_KEYBINDS
+from config import USER_KEYBINDS
 
 APP_NAME = "Azulyn"
 APPDATA_DIR = os.path.join(os.environ["APPDATA"], APP_NAME)
@@ -30,7 +30,7 @@ except:
 
 ALIASES = {
     "(tc)": "<:Target_Cycle:000000000000000000>",  # Replace with actual emoji ID if needed
-    "(r)": "<:Smoke_Cloud:000000000000000000>",     # Example replacement
+    "(r)": "<:Smoke_Cloud:000000000000000000>",  # Example replacement
 }
 
 
@@ -74,14 +74,10 @@ EMOJI_NAME_OVERRIDES = {
     "gbarge": "Greater_Barge",
 }
 
-IGNORED_EMOJI_NAMES = {
-    "deathguard90",
-    "omniguard",
-    "dragonclaw"
-}
+IGNORED_EMOJI_NAMES = {"deathguard90", "omniguard", "dragonclaw"}
 
 
-#text = "<:surge:535533810004262912> + <:deathskulls:1159434663903899728> → <:bloat:1159433682403201044> → <:soulsap:1137809140476031057> → <:touchofdeath:1137809175980810380> → <:deathguard90:1138809243143766118> <:eofspec:1257438999794946099> → <:soulsap:1137809140476031057> → <:omniguard:1138809234922934282> <:spec:537340400273195028> → <:necroauto:1137809137401602109>"
+# text = "<:surge:535533810004262912> + <:deathskulls:1159434663903899728> → <:bloat:1159433682403201044> → <:soulsap:1137809140476031057> → <:touchofdeath:1137809175980810380> → <:deathguard90:1138809243143766118> <:eofspec:1257438999794946099> → <:soulsap:1137809140476031057> → <:omniguard:1138809234922934282> <:spec:537340400273195028> → <:necroauto:1137809137401602109>"
 
 # Start tick value
 tick = 4
@@ -116,10 +112,16 @@ for section in sections:
                 best_match = EMOJI_NAME_OVERRIDES[key]
             else:
                 simplified = [a.lower().replace("_", "") for a in ability_names]
-                close_matches = difflib.get_close_matches(key.replace("_", ""), simplified, n=1, cutoff=0.6)
+                close_matches = difflib.get_close_matches(
+                    key.replace("_", ""), simplified, n=1, cutoff=0.6
+                )
                 if close_matches:
                     matched = close_matches[0]
-                    best_match = next(a for a in ability_names if a.lower().replace("_", "") == matched)
+                    best_match = next(
+                        a
+                        for a in ability_names
+                        if a.lower().replace("_", "") == matched
+                    )
                 else:
                     print(f"Could not match emoji name: {raw_name}")
                     continue

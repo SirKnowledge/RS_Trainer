@@ -3,3 +3,4 @@ __pycache__
 .venv
 rs_trainer.egg-info
 /resources/ability_icons
+/user_config/

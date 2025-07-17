@@ -1,75 +1,73 @@
-import shutil
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
 import subprocess
-import threading
 import os
 import requests
 import webbrowser
 import json
-
-from pathlib import Path
-from config.config import keybind_config, USER_KEYBINDS
 from order_key_binds import reorder_keybinds_json
+import rs_trainer
+import config
+from key_binds import triggerkeybinds
+
 
 # ----------------- Config -----------------
 CURRENT_VERSION = "1.1.1"
 VERSION_URL = "https://raw.githubusercontent.com/blueboy4g/RS_Trainer/main/version.json"
 
-APP_NAME = "Azulyn"
-APPDATA_DIR = os.path.join(os.environ["APPDATA"], APP_NAME)
-os.makedirs(APPDATA_DIR, exist_ok=True)
+os.makedirs(config.APPDATA_DIR, exist_ok=True)
 
-last_boss_selected_save = os.path.join(APPDATA_DIR, "last_boss_selected.txt")
-last_rotation_selected_save = os.path.join(APPDATA_DIR, "last_rotation_selected.txt")
-KEYBINDS_FILE = os.path.join(APPDATA_DIR, "keybinds.json")
-CONFIG_FILE = os.path.join(APPDATA_DIR, "config.json")
-BUILD_ROTATION_FILE = os.path.join(APPDATA_DIR, "build_rotation.txt")
-DEFAULT_BUILD_ROTATION_FILE = os.path.join("config", "build_rotation.txt")
-
-
-APPDATA_BOSS_DIR = (
-    Path(os.getenv("APPDATA") or Path.home() / ".config") / "Azulyn" / "boss_rotations"
+last_boss_selected_save = os.path.join(config.APPDATA_DIR, "last_boss_selected.txt")
+last_rotation_selected_save = os.path.join(
+    config.APPDATA_DIR, "last_rotation_selected.txt"
 )
-SOURCE_BOSS_DIR = Path("boss_rotations")
-APPDATA_BOSS_DIR.mkdir(parents=True, exist_ok=True)
+KEYBINDS_FILE = os.path.join(config.APPDATA_DIR, "keybinds.json")
+CONFIG_FILE = os.path.join(config.APPDATA_DIR, "config.json")
+BUILD_ROTATION_FILE = os.path.join(config.APPDATA_DIR, "build_rotation.txt")
+# DEFAULT_BUILD_ROTATION_FILE = os.path.join("conf"build_rotation.txt")
+
+
+APPDATA_BOSS_DIR = os.path.join(config.APPDATA_DIR, "boss_rotations")
+# SOURCE_BOSS_DIR = Path("boss_rotations")
+# APPDATA_BOSS_DIR.mkdir(parents=True, exist_ok=True)
 
 BOSS_FILE = os.path.join(APPDATA_BOSS_DIR, "azulyn_telos_2499_necro.json")
+# TODO: This should pick up last saved boss file
 
 ICON_PATH = "Resources/azulyn_icon.ico"
 # ------------------------------------------
 
-with open("config/keybinds.json", "r", encoding="utf-8") as f:
-    print("Loading default keybinds from: ", "config/keybinds.json")
-    default_keybinds = json.load(f)
+with open(KEYBINDS_FILE, "r", encoding="utf-8") as f:
+    print("Loading default keybinds from: ", KEYBINDS_FILE)
+    default_keybinds: dict[str, dict[str, list[str]]] = json.load(f)
 
-# Check for missing keys under "ABILITY_KEYBINDS"
+# Check for missing keys under "ABILITY_KEYBINDS" in USER_KEYBINDS
 missing_keybinds = {
     key: value
     for key, value in default_keybinds["ABILITY_KEYBINDS"].items()
-    if key not in keybind_config["ABILITY_KEYBINDS"]
+    if key not in config.keybind_config["ABILITY_KEYBINDS"]
 }
 
 if missing_keybinds:
     # Add missing keys to "ABILITY_KEYBINDS"
-    keybind_config["ABILITY_KEYBINDS"].update(missing_keybinds)
+    config.keybind_config["ABILITY_KEYBINDS"].update(missing_keybinds)
 
     # Save the updated user keybinds without reformatting other entries
-    with open(USER_KEYBINDS, "w", encoding="utf-8") as f:
-        json.dump(keybind_config, f, indent=4, separators=(",", ": "))
+    with open(config.USER_KEYBINDS, "w", encoding="utf-8") as f:
+        json.dump(config.keybind_config, f, indent=4, separators=(",", ": "))
     print(f"Added missing keybinds under 'ABILITY_KEYBINDS': {missing_keybinds}")
 else:
     print("All keybinds under 'ABILITY_KEYBINDS' are already present.")
 
-if not os.path.exists(BUILD_ROTATION_FILE):
-    if os.path.exists(DEFAULT_BUILD_ROTATION_FILE):
-        shutil.copy(DEFAULT_BUILD_ROTATION_FILE, BUILD_ROTATION_FILE)
+# if not os.path.exists(BUILD_ROTATION_FILE):
+#     if os.path.exists(DEFAULT_BUILD_ROTATION_FILE):
+#         shutil.copy(DEFAULT_BUILD_ROTATION_FILE, BUILD_ROTATION_FILE)
 
-for file in SOURCE_BOSS_DIR.glob("*.json"):
-    target = APPDATA_BOSS_DIR / file.name
-    if not target.exists():
-        shutil.copy(file, target)
+# for file in SOURCE_BOSS_DIR.glob("*.json"):
+#     target = APPDATA_BOSS_DIR / file.name
+#     if not target.exists():
+#         shutil.copy(file, target)
 
 
 def check_for_update():
@@ -97,7 +95,8 @@ def load_last_used_boss():
     if os.path.exists(last_boss_selected_save):
         with open(last_boss_selected_save, "r") as f:
             return f.read().strip()
-    return BOSS_FILE
+    else:
+        return BOSS_FILE
 
 
 def load_last_pvm_rot():
@@ -112,36 +111,12 @@ def save_current_config():
         f.write(last_used_boss.get())
 
 
-def start_script(exe_path, log_output=False, args=None):
-    full_path = os.path.abspath(exe_path)
-    args = args or []
-
-    def run():
-        try:
-            subprocess.Popen(
-                [full_path] + args,
-                cwd=os.path.dirname(full_path),
-                stdout=subprocess.PIPE if log_output else None,
-                stderr=subprocess.STDOUT if log_output else None,
-                text=True,
-            )
-            # if log_output:
-            #     log_text.delete("1.0", tk.END)
-            #     for line in process.stdout:
-            #         log_text.insert(tk.END, line)
-            #         log_text.see(tk.END)
-            #     process.wait()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to launch {exe_path}:\n{e}")
-
-    threading.Thread(target=run).start()
-
-
 def open_file_editor(filepath):
     if not os.path.isfile(filepath):
         messagebox.showerror("Error", f"File not found: {filepath}")
         return
     subprocess.Popen([get_default_editor(), filepath])
+    # TODO: Use default based on file extension
 
 
 def get_default_editor():
@@ -156,13 +131,9 @@ def browse_rotation_file():
     )
     if file_path:
         last_used_boss.set(file_path)
-        last_used_boss_trimmed_string = (
-            last_used_boss.get().split("/")[-1].split("\\")[-1]
+        last_used_boss_trimmed.set(
+            os.path.splitext(os.path.split(last_used_boss.get())[1])[0]
         )
-        last_used_boss_trimmed_string = last_used_boss_trimmed_string.replace(
-            ".json", ""
-        )
-        last_used_boss_trimmed.set(last_used_boss_trimmed_string)
         save_current_config()
 
 
@@ -182,6 +153,12 @@ def open_youtube():
     webbrowser.open("https://www.youtube.com/@Azulyn1")
 
 
+def start_overlay():
+    root.withdraw()
+    rs_trainer.triggerrstrainer()
+    root.deiconify()
+
+
 # --------------- UI Setup ----------------
 reorder_keybinds_json()
 root = tk.Tk()
@@ -197,8 +174,6 @@ style.map("Dark.TButton", background=[("active", "#555")])
 
 last_used_boss = tk.StringVar(value=load_last_used_boss())
 last_used_pvm_rot = tk.StringVar(value=load_last_pvm_rot())
-key_bind_config = tk.StringVar(value=KEYBINDS_FILE)
-config_file = tk.StringVar(value=CONFIG_FILE)
 
 
 ascii_title = r"""
@@ -213,13 +188,6 @@ ascii_title = r"""
 # Layout Frames
 top_frame = tk.Frame(root)
 top_frame.pack(pady=5, fill="x")
-
-# tk.Label(
-#     top_frame,
-#     text='RuneScape Trainer',
-#     font='Helvetica 12 bold',
-#     foreground="black",
-# ).pack(pady=0)
 
 left = tk.Frame(top_frame)
 right = tk.Frame(top_frame)
@@ -239,24 +207,23 @@ ttk.Button(
     left,
     text="Start RS Overlay",
     style="Gray.TButton",
-    command=lambda: start_script("scripts/RS_Overlay.exe", args=[last_used_boss.get()]),
+    command=lambda: start_overlay(),
 ).pack(pady=2, fill="x")
 ttk.Button(
     left,
     text="Edit Keybinds",
     style="Gray.TButton",
-    command=lambda: start_script("key_binds.exe"),
+    command=lambda: triggerkeybinds(),
 ).pack(pady=2, fill="x")
-# ttk.Button(left, text="Build Rotation", style="Gray.TButton",
-#            command=lambda: start_script("scripts/rotation_creation.exe", log_output=True)).pack(pady=2, fill="x")
 
 tk.Label(log_frame, text="Current Boss:").pack(pady=(0, 2))
 
-last_used_boss_trimmed = last_used_boss.get().split("/")[-1].split("\\")[-1]
-last_used_boss_trimmed = last_used_boss_trimmed.replace(".json", "")
-last_used_boss_trimmed = tk.StringVar(value=last_used_boss_trimmed)
+last_used_boss_trimmed = tk.StringVar(
+    value=os.path.splitext(os.path.split(last_used_boss.get())[1])[0]
+)
 
 tk.Entry(log_frame, textvariable=last_used_boss_trimmed, width=40).pack()
+# TODO: Change above entry to a list dialog, loading all boss rotation files
 ttk.Button(
     log_frame,
     text="Select Boss Script",
@@ -268,33 +235,15 @@ ttk.Button(
     right,
     text="Start RS Trainer",
     style="Gray.TButton",
-    command=lambda: start_script("scripts/RS_Trainer.exe", args=[last_used_boss.get()]),
+    command=lambda: start_overlay(),
 ).pack(pady=2, fill="x")
 ttk.Button(
     right,
     text="Edit Config",
     style="Gray.TButton",
-    command=lambda: open_file_editor(config_file.get()),
+    command=lambda: open_file_editor(CONFIG_FILE),
 ).pack(pady=2, fill="x")
-# ttk.Button(right, text="Build Rotation File", style="Gray.TButton",
-#            command=lambda: open_file_editor(last_used_pvm_rot.get())).pack(pady=2, fill="x")
 
-# trim everything but the .json name at the end
-last_used_pvm_rot_trimmed = last_used_pvm_rot.get().split("/")[-1].split("\\")[-1]
-# trim everything the .json name at the end
-last_used_pvm_rot_trimmed = last_used_pvm_rot_trimmed.replace(".txt", "")
-last_used_pvm_rot_trimmed = tk.StringVar(value=last_used_pvm_rot_trimmed)
-
-# tk.Label(right, text="Rotation Path:").pack(pady=(5, 2))
-# tk.Entry(right, textvariable=last_used_pvm_rot_trimmed, width=40).pack()
-
-# Log Output
-# tk.Label(log_frame, text="Build Rotation Log:").pack()
-# log_text = tk.Text(log_frame, height=10, width=70, wrap=tk.WORD)
-# log_text.pack(padx=5, pady=(0, 2))
-
-# ttk.Button(bottom_frame, text="Clear Log", style="Gray.TButton",
-#            command=lambda: log_text.delete("1.0", tk.END)).pack(side="left", padx=5, pady=1)
 ttk.Button(
     bottom_frame,
     text="Check for Updates",
@@ -314,7 +263,7 @@ ttk.Button(
     bottom_frame, text="Donate", style="Gray.TButton", command=open_donation
 ).pack(side="left", padx=5, pady=1)
 
-# tk.Label(
+# tk.Label(q
 #     footer,
 #     text=ascii_title,
 #     font=("Courier", 3),
@@ -327,5 +276,6 @@ tk.Label(footer, font=("Courier", 8), text=f"Current Version: {CURRENT_VERSION}"
     side="right", padx=5, pady=0
 )
 
+root.protocol("WM_DELETE_WINDOW", root.destroy)
 
 root.mainloop()

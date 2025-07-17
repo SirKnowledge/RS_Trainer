@@ -2,7 +2,7 @@ import pygame
 import time
 import math
 
-from config.config import TICK_DURATION
+from config import TICK_DURATION
 
 
 class DialAnimation:
@@ -13,7 +13,9 @@ class DialAnimation:
         self.size = size
         self.angle = 270  # Start at 270° (pointing up)
         self.start_time = None  # Will be set when animation starts
-        self.duration_seconds = duration_ticks * TICK_DURATION  # 3 ticks * 0.6s per tick = 1.8s
+        self.duration_seconds = (
+            duration_ticks * TICK_DURATION
+        )  # 3 ticks * 0.6s per tick = 1.8s
         self.active = False  # Track if animation is currently running
 
     def start(self):
@@ -32,7 +34,9 @@ class DialAnimation:
             return
 
         # Rotate smoothly, completing 360° in `duration_seconds`
-        self.angle = 270 + (elapsed_time / self.duration_seconds) * 360  # Always starts & ends vertical
+        self.angle = (
+            270 + (elapsed_time / self.duration_seconds) * 360
+        )  # Always starts & ends vertical
 
     def draw(self, screen):
         """Draw the dial animation."""
@@ -40,7 +44,12 @@ class DialAnimation:
             return
 
         # Draw square background
-        pygame.draw.rect(screen, (50, 50, 50), (self.x, self.y, self.size, self.size), border_radius=10)
+        pygame.draw.rect(
+            screen,
+            (50, 50, 50),
+            (self.x, self.y, self.size, self.size),
+            border_radius=10,
+        )
 
         # Calculate dial position
         center_x = self.x + self.size // 2
@@ -50,4 +59,6 @@ class DialAnimation:
         end_y = center_y + math.sin(math.radians(self.angle)) * radius
 
         # Draw rotating dial
-        pygame.draw.line(screen, (255, 255, 255), (center_x, center_y), (end_x, end_y), 4)
+        pygame.draw.line(
+            screen, (255, 255, 255), (center_x, center_y), (end_x, end_y), 4
+        )

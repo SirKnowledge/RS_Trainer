@@ -2,20 +2,23 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import os
+from config import APPDATA_DIR, USER_KEYBINDS, DEFAULT_KEYBINDS
 
 
-APP_NAME = "Azulyn"
-APPDATA_DIR = os.path.join(os.environ["APPDATA"], APP_NAME)
-CONFIG_PATH = os.path.join(APPDATA_DIR, "keybinds.json")
+# CONFIG_PATH = os.path.join(APPDATA_DIR, "keybinds.json")
 
 
 ICON_PATH = "Resources/azulyn_icon.ico"
 
 MODIFIER_ALIASES = {
-    "CTRL": "LCTRL", "LCTRL": "LCTRL",
-    "SHIFT": "LSHIFT", "LSHIFT": "LSHIFT",
-    "ALT": "LALT", "LALT": "LALT"
+    "CTRL": "LCTRL",
+    "LCTRL": "LCTRL",
+    "SHIFT": "LSHIFT",
+    "LSHIFT": "LSHIFT",
+    "ALT": "LALT",
+    "LALT": "LALT",
 }
+
 
 class AbilityKeybindEditor:
     def __init__(self, root):
@@ -36,8 +39,7 @@ class AbilityKeybindEditor:
         self.scrollable_frame = tk.Frame(canvas)
 
         self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
@@ -59,16 +61,24 @@ class AbilityKeybindEditor:
         bottom = tk.Frame(self.root)
         bottom.pack(fill=tk.X, pady=10)
 
-        tk.Button(bottom, text="SAVE", command=self.save_json, background='gray', foreground='black', fg='black', width=20,
-                  font=('Helvetica 13 bold italic') ).pack()
+        tk.Button(
+            bottom,
+            text="SAVE",
+            command=self.save_json,
+            background="gray",
+            foreground="black",
+            fg="black",
+            width=20,
+            font=("Helvetica 13 bold italic"),
+        ).pack()
 
     def add_section(self, title, ability_list, start_row):
         collapsed = tk.BooleanVar(value=True)
 
         # Row: Section label in col 0, expand/collapse button in col 1
-        tk.Label(self.rows_container, text="       " + title, font=("Arial", 12, "bold")).grid(
-            row=start_row, column=0, sticky="w", padx=5
-        )
+        tk.Label(
+            self.rows_container, text="       " + title, font=("Arial", 12, "bold")
+        ).grid(row=start_row, column=0, sticky="w", padx=5)
 
         toggle_button = tk.Button(self.rows_container, text="[+]", width=3)
         toggle_button.grid(row=start_row, column=0, sticky="w")
@@ -91,11 +101,21 @@ class AbilityKeybindEditor:
         toggle_button.config(command=toggle)
 
         # ➕ Header row inside each section
-        tk.Label(content_frame, text="Ability", width=18, anchor="w").grid(row=0, column=0, padx=5, sticky="w")
-        tk.Label(content_frame, text="Key", width=12, anchor="w").grid(row=0, column=1, padx=5, sticky="w")
-        tk.Label(content_frame, text="Ctrl", width=8, anchor="w").grid(row=0, column=2, padx=5)
-        tk.Label(content_frame, text="Shift", width=8, anchor="w").grid(row=0, column=3, padx=5)
-        tk.Label(content_frame, text="Alt", width=8, anchor="w").grid(row=0, column=4, padx=5)
+        tk.Label(content_frame, text="Ability", width=18, anchor="w").grid(
+            row=0, column=0, padx=5, sticky="w"
+        )
+        tk.Label(content_frame, text="Key", width=12, anchor="w").grid(
+            row=0, column=1, padx=5, sticky="w"
+        )
+        tk.Label(content_frame, text="Ctrl", width=8, anchor="w").grid(
+            row=0, column=2, padx=5
+        )
+        tk.Label(content_frame, text="Shift", width=8, anchor="w").grid(
+            row=0, column=3, padx=5
+        )
+        tk.Label(content_frame, text="Alt", width=8, anchor="w").grid(
+            row=0, column=4, padx=5
+        )
 
         # Ability rows (start at row=1 now)
         for i, (name, keys) in enumerate(ability_list, start=1):
@@ -103,14 +123,19 @@ class AbilityKeybindEditor:
 
         return start_row + 2 + len(ability_list)
 
-
     def load_json(self):
-        if not os.path.exists(CONFIG_PATH):
-            messagebox.showerror("Missing File", f"Cannot find: {CONFIG_PATH}")
-            return
-
-        with open(CONFIG_PATH, "r") as f:
-            data = json.load(f)
+        if not os.path.exists(USER_KEYBINDS):
+            if not os.path.exists(DEFAULT_KEYBINDS):
+                messagebox.showerror(
+                    "Missing Files",
+                    f"Cannot find files: {USER_KEYBINDS} or {DEFAULT_KEYBINDS}",
+                )
+                return
+            with open(DEFAULT_KEYBINDS, "r") as f:
+                data: dict[str, dict[str, list[str]]] = json.load(f)
+        else:
+            with open(USER_KEYBINDS, "r") as f:
+                data: dict[str, dict[str, list[str]]] = json.load(f)
 
         keybinds = data.get("ABILITY_KEYBINDS", {})
 
@@ -124,7 +149,7 @@ class AbilityKeybindEditor:
             "Range": [],
             "Magic": [],
             "Necromancy": [],
-            "Defence": []
+            "Defence": [],
         }
 
         current_section = "Gear"
@@ -148,7 +173,6 @@ class AbilityKeybindEditor:
         for section_name, ability_list in sections.items():
             row = self.add_section(section_name, ability_list, row)
 
-
     def save_json(self):
         data = {"ABILITY_KEYBINDS": {}}
         for name, (modifiers, key_entry) in self.abilities.items():
@@ -164,13 +188,16 @@ class AbilityKeybindEditor:
                 mods.append(key.upper())
             data["ABILITY_KEYBINDS"][name] = mods
 
-        with open(CONFIG_PATH, "w") as f:
+        with open(USER_KEYBINDS, "w") as f:
             json.dump(data, f, indent=2)
 
-        messagebox.showinfo("Saved", f"Saved to:\n{CONFIG_PATH}")
+        messagebox.showinfo("Saved", f"Saved to:\n{USER_KEYBINDS}")
+        self.root.destroy()
 
     def add_ability_row(self, parent_frame, row_num, ability_name, keys):
-        tk.Label(parent_frame, text=ability_name, width=25, anchor="w").grid(row=row_num, column=0, padx=5, sticky="w")
+        tk.Label(parent_frame, text=ability_name, width=25, anchor="w").grid(
+            row=row_num, column=0, padx=5, sticky="w"
+        )
 
         key_entry = tk.Entry(parent_frame, width=12)
         key_entry.grid(row=row_num, column=1, padx=5, sticky="w")
@@ -179,9 +206,15 @@ class AbilityKeybindEditor:
         shift_var = tk.BooleanVar()
         alt_var = tk.BooleanVar()
 
-        tk.Checkbutton(parent_frame, variable=ctrl_var).grid(row=row_num, column=2, padx=5)
-        tk.Checkbutton(parent_frame, variable=shift_var).grid(row=row_num, column=3, padx=5)
-        tk.Checkbutton(parent_frame, variable=alt_var).grid(row=row_num, column=4, padx=5)
+        tk.Checkbutton(parent_frame, variable=ctrl_var).grid(
+            row=row_num, column=2, padx=5
+        )
+        tk.Checkbutton(parent_frame, variable=shift_var).grid(
+            row=row_num, column=3, padx=5
+        )
+        tk.Checkbutton(parent_frame, variable=alt_var).grid(
+            row=row_num, column=4, padx=5
+        )
 
         for k in keys:
             normalized = MODIFIER_ALIASES.get(k.upper(), None)
@@ -196,13 +229,17 @@ class AbilityKeybindEditor:
 
         self.abilities[ability_name] = (
             {"ctrl": ctrl_var, "shift": shift_var, "alt": alt_var},
-            key_entry
+            key_entry,
         )
 
 
-if __name__ == "__main__":
+def triggerkeybinds():
     root = tk.Tk()
     root.iconbitmap(ICON_PATH)
     root.geometry("550x650")
-    app = AbilityKeybindEditor(root)
+    AbilityKeybindEditor(root)
     root.mainloop()
+
+
+if __name__ == "__main__":
+    triggerkeybinds()
